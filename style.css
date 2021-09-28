@@ -1,0 +1,11 @@
+html, body {
+	background-color: #000000;
+	color: #EEEEEE;
+	font-family: 'Trebuchet MS', Tahoma, Arial;
+	font-size: 13px;
+	margin: 0px;
+	padding: 0px;
+	border: 0;
+	overflow: hidden;
+	display: block;
+}
