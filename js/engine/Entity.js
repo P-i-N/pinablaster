@@ -30,6 +30,9 @@ class Entity {
 	dirX = 0;
 	dirY = 0;
 
+	lastAppliedDirX = 0;
+	lastAppliedDirY = 0;
+
 	speed = 1.0;
 	
 	correctMovement = false;
@@ -65,5 +68,52 @@ class Entity {
 			this.direction = 0;
 		else if (this.nextDirection == dir)
 			this.nextDirection = 0;
+	}
+
+	getOccupiedBlockRange(applyDir = false, clamp = false) {
+		let x = this.x;
+		let y = this.y;
+
+		if (applyDir) {
+			x += this.dirX;
+			y += this.dirY;
+		}
+
+		let result = {
+			x1: Math.floor(x / this.world.sprites.spriteWidth),
+			y1: Math.floor(y / this.world.sprites.spriteHeight),
+			x2: Math.floor((x + this.width) / this.world.sprites.spriteWidth),
+			y2: Math.floor((y + this.height) / this.world.sprites.spriteHeight)
+		};
+
+		if (Math.trunc(x) == x && !((x + this.width) % this.world.sprites.spriteWidth))
+			--result.x2;
+
+		if (Math.trunc(y) == y && !((y + this.height) % this.world.sprites.spriteHeight))
+			--result.y2;
+
+		if (clamp) {
+			if (result.x1 < 0)
+				result.x1 = 0;
+			else if (result.x1 >= this.world.width)
+				result.x1 = this.world.width - 1;
+
+			if (result.y1 < 0)
+				result.y1 = 0;
+			else if (result.y1 >= this.world.height)
+				result.y1 = this.world.height - 1;
+			
+			if (result.x2 < 0)
+				result.x2 = 0;
+			else if (result.x2 >= this.world.width)
+				result.x2 = this.world.width - 1;
+			
+			if (result.y2 < 0)
+				result.y2 = 0;
+			else if (result.y2 >= this.world.height)
+				result.y2 = this.world.height - 1;
+		}
+
+		return result;
 	}
 }

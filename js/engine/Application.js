@@ -1,3 +1,14 @@
+class DebugLine {
+	p0 = new Point();
+	p1 = new Point();
+	color = "#FFF";
+}
+
+class DebugAABB {
+	aabb = new AABB();
+	color = "#FFF";
+}
+
 class Application {
 	targetCanvas = null;
 	targetCanvasContext = null;
@@ -22,6 +33,15 @@ class Application {
 
 	/** @type {Array.<Controller>} */
 	controllers = [];
+
+	/** @type {Array.<string>} */
+	debugStrings = [];
+
+	/** @type {Array.<DebugLine>} */
+	debugLines = [];
+
+	/** @type {Array.<DebugAABB>} */
+	debugAABBs = [];
 
 	#onKeyDownFunc = (e) => this.#onKeyDown(e);
 	#onKeyUpFunc = (e) => this.#onKeyUp(e);
@@ -75,7 +95,7 @@ class Application {
 		if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1)
 			e.preventDefault();
 
-		console.log(e);
+		//console.log(e);
 
 		this.controllers.forEach(ctrl => {
 			ctrl.onKeyDown(e.key);
@@ -174,6 +194,24 @@ class Application {
 			overlay.render(this.canvasContext);
 		}
 
+		// Draw debug AABBs
+		{
+			this.debugAABBs.forEach(daabb => {
+
+			});
+		}
+
+		// Print debug lines
+		{
+			let y = 4;
+			this.debugStrings.forEach(text => {
+				this.font.print(this.canvasContext, 0, y, text, 2.0);
+				y += (this.font.spriteHeight + 2) * 2.0;
+			});
+
+			this.debugStrings = [];
+		}
+		
 		// Blit application canvas over target canvas
 		{
 			let ctx = this.targetCanvasContext;

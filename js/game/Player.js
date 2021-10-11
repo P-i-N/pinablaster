@@ -31,8 +31,8 @@ class Player extends Entity {
 			dirX -= 1.0;
 
 		if (dirX && dirY) {
-			//dirX *= Math.SQRT1_2;
-			//dirY *= Math.SQRT1_2;
+			dirX *= Math.SQRT1_2;
+			dirY *= Math.SQRT1_2;
 		}
 
 		this.dirX = dirX;
@@ -40,6 +40,8 @@ class Player extends Entity {
 	}
 
 	tick(delta) {
+		debugPrint(`playerX=${this.x}, playerY=${this.y}`);
+
 		this.#handleInput();
 	}
 }

@@ -53,8 +53,8 @@ class Game extends Application {
 				if (newEntity) {
 					newEntity.x = x * this.sprites.spriteWidth;
 					newEntity.y = y * this.sprites.spriteHeight;
-					newEntity.width = this.sprites.spriteWidth;
-					newEntity.height = this.sprites.spriteHeight;
+					newEntity.width = this.sprites.spriteWidth - 0;
+					newEntity.height = this.sprites.spriteHeight - 0;
 					this.world.addEntity(newEntity);
 				}
 			}
@@ -66,13 +66,13 @@ class Game extends Application {
 			case 0: {
 				this.initWorldFromString([
 					"200000000000000000000000002",
-					"0 1 1 1                   0",
-					"0 P   1 111               0",
+					"0          111            0",
+					"0           1  1          0",
+					"0     P 1 1   11          0",
+					"0           1  1          0",
+					"0          111            0",
+					"0           1             0",
 					"0                         0",
-					"0     1 1                 0",
-					"0      1                  0",
-					"0      1 11               0",
-					"0      1 11               0",
 					"0                         0",
 					"0                         0",
 					"0                         0",

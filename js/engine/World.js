@@ -107,23 +107,53 @@ class World {
 		return this.colliders[Math.floor(x)][Math.floor(y)];
 	}
 
-	testCollision(x, y, width, height) {
-		let x1 = Math.floor(x / this.sprites.spriteWidth);
-		let y1 = Math.floor(y / this.sprites.spriteHeight);
-		let x2 = Math.floor((x + width) / this.sprites.spriteWidth);
-		let y2 = Math.floor((y + height) / this.sprites.spriteHeight);
-		
-		if (x1 < 0) x1 = 0; else if (x1 >= this.width) x1 = this.width - 1;
-		if (y1 < 0) y1 = 0; else if (y1 >= this.height) y1 = this.height - 1;
-		if (x2 < 0) x2 = 0; else if (x2 >= this.width) x2 = this.width - 1;
-		if (y2 < 0) y2 = 0; else if (y2 >= this.height) y2 = this.height - 1;
+	#slideEntityAroundRect(e, dirX, dirY, x1, y1, x2, y2) {
+		let x = e.x + dirX;
+		let y = e.y + dirY;
 
-		for (let by = y1; by <= y2; ++by)
-			for (var bx = x1; bx <= x2; ++bx)
-				if (this.isBlockOccupied(bx, by))
-					return true;
-		
-		return false;
+		if (dirX) {
+			let dx = 0;
+			let distLeft = x2 - x;
+			let distRight = x1 - (x + e.width);
+
+			debugPrint(`distLeft=${distLeft}`);
+			debugPrint(`distRight=${distRight}`);
+	
+			// Left side colliding
+			if (distLeft >= 0 && x + e.width > x2) {
+				dx += distLeft;
+			}
+			
+			// Right side colliding
+			if (distRight < 0 && x <= x1) {
+				dx += distRight;
+			}
+
+			return dx;
+		}
+
+		if (dirY) {
+			let dy = 0;
+			let distTop = y2 - y;
+			let distBottom = y1 - (y + e.height);
+
+			debugPrint(`distTop=${distTop}`);
+			debugPrint(`distBottom=${distBottom}`);
+	
+			// Top side colliding
+			if (distTop > 0 && y + e.height > y2) {
+				dy += distTop;
+			}
+
+			// Bottom side colliding
+			if (distBottom < 0 && y <= y1) {
+				dy += distBottom;
+			}
+
+			return dy;
+		}
+
+		return 0;
 	}
 
 	/**
@@ -131,85 +161,82 @@ class World {
 	 * @param {number} delta 
 	 */
 	#handleEntityMovement(e, delta) {
-		let newDirX = e.dirX;
-		let newDirY = e.dirY;
+		{
+			let range = e.getOccupiedBlockRange(true, true);
+			debugPrint(`${range.x1} ${range.y1} ${range.x2} ${range.y2}`);
+			debugPrint(`${e.lastAppliedDirX} ${e.lastAppliedDirY}`);
+		}
 
-		const sw = this.sprites.spriteWidth;
-		const sh = this.sprites.spriteHeight;
+		let dirX = e.dirX;
+		let dirY = e.dirY;
+		e.dirX = 0;
+		e.dirY = 0;
 
-		// Moving right
-		if (newDirX > 0) {
-			if (this.isBlockOccupied(
-				Math.floor(((e.x + sw - 1) + newDirX) / sw),
-				Math.floor(e.y / sh))) {
-				e.x = Math.floor(e.x / sw) * sw;
-				newDirX = 0;
+		let firstAxis = 0;
+
+		if (dirX && dirY) {
+			if (e.lastAppliedDirX && !e.lastAppliedDirY)
+				firstAxis = 1;
+			else if (!e.lastAppliedDirX && e.lastAppliedDirY)
+				firstAxis = 0;
+		}
+
+		for (let axis = firstAxis; axis < firstAxis + 2; ++axis) {
+			// Solve X axis
+			if (((axis % 2) == 0) && dirX) {
+				e.dirX = dirX;
+				e.dirY = 0;
+				let range = e.getOccupiedBlockRange(true, true);
+				for (let by = range.y1; by <= range.y2; ++by)
+					for (var bx = range.x1; bx <= range.x2; ++bx)
+						if (this.isBlockOccupied(bx, by)) {
+							dirX += this.#slideEntityAroundRect(e, dirX, 0,
+								bx * this.sprites.spriteWidth, by * this.sprites.spriteHeight,
+								(bx + 1) * this.sprites.spriteWidth, (by + 1) * this.sprites.spriteHeight);
+						}
+				
+				if (e.dirX - dirX)
+						dirY /= Math.SQRT1_2;
+
+				if (Math.abs(dirX - Math.round(dirX)) < 0.001)
+					dirX = Math.round(dirX);
+
+				e.x += dirX;
+				let roundDiff = Math.abs(e.x - Math.round(e.x));
+				if (roundDiff < 0.001)
+						e.x = Math.round(e.x);
 			}
 
-			if (this.isBlockOccupied(
-				Math.floor(((e.x + sw - 1) + newDirX) / sw),
-				Math.floor((e.y + sh - 1) / sh))) {
-				e.x = Math.floor(e.x / sw) * sw;
-				newDirX = 0;
+			// Solve Y axis
+			if (((axis % 2) == 1) && dirY) {
+				e.dirX = 0;
+				e.dirY = dirY;
+				let range = e.getOccupiedBlockRange(true, true);
+				for (let by = range.y1; by <= range.y2; ++by)
+					for (var bx = range.x1; bx <= range.x2; ++bx)
+						if (this.isBlockOccupied(bx, by)) {
+							dirY += this.#slideEntityAroundRect(e, 0, dirY,
+								bx * this.sprites.spriteWidth, by * this.sprites.spriteHeight,
+								(bx + 1) * this.sprites.spriteWidth, (by + 1) * this.sprites.spriteHeight);
+							}
+
+				if (e.dirY - dirY)
+						dirX /= Math.SQRT1_2;
+
+				if (Math.abs(dirY - Math.round(dirY)) < 0.001)
+						dirY = Math.round(dirY);
+
+				e.y += dirY;
+				let roundDiff = Math.abs(e.y - Math.round(e.y));
+				if (roundDiff < 0.001)
+						e.y = Math.round(e.y);
 			}
 		}
 
-		// Moving left
-		if (newDirX < 0) {
-			if (this.isBlockOccupied(
-				Math.floor((e.x + newDirX) / sw),
-				Math.floor(e.y / sh))) {
-				e.x = Math.floor((e.x + sw - 1) / sw) * sw;
-				newDirX = 0;
-			}
-
-			if (this.isBlockOccupied(
-				Math.floor((e.x + newDirX) / sw),
-				Math.floor((e.y + sh - 1) / sh))) {
-				e.x = Math.floor((e.x + sw - 1) / sw) * sw;
-				newDirX = 0;
-			}
-		}
-
-		// Moving up
-		if (newDirY < 0) {
-			if (this.isBlockOccupied(
-				Math.floor(e.x / sw),
-				Math.floor((e.y + newDirY) / sh))) {
-				e.y = Math.floor((e.y + sh - 1) / sh) * sh;
-				newDirY = 0;
-			}
-
-			if (this.isBlockOccupied(
-				Math.floor((e.x + sw - 1) / sw),
-				Math.floor((e.y + newDirY) / sh))) {
-				e.y = Math.floor((e.y + sh - 1) / sh) * sh;
-				newDirY = 0;
-			}
-		}
-
-		// Moving down
-		if (newDirY > 0) {
-			if (this.isBlockOccupied(
-				Math.floor(e.x / sw),
-				Math.floor(((e.y + sh - 1) + newDirY) / sh))) {
-				e.y = Math.floor(e.y / sh) * sh;
-				newDirY = 0;
-			}
-
-			if (this.isBlockOccupied(
-				Math.floor((e.x + sw - 1) / sw),
-				Math.floor(((e.y + sh - 1) + newDirY) / sh))) {
-				e.y = Math.floor(e.y / sh) * sh;
-				newDirY = 0;
-			}
-		}
-
-		if (this.testCollision(e.x + newDirX, e.y + newDirY, e.width, e.height)) {
-		}
-
-		e.x += newDirX;
-		e.y += newDirY;
+		e.dirX = dirX;
+		e.dirY = dirY;
+		e.lastAppliedDirX = e.dirX;
+		e.lastAppliedDirY = e.dirY;
 	}
 
 	tick(delta) {
