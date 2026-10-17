@@ -1,0 +1,182 @@
+[Config]
+Compilator.SaveAll=0
+Compilator.Capture=0
+Compilator.HideOutput=0
+Compilator.LogType=0
+DefaultCPIndex=0
+LogtoEnd=1
+DontOpen=0
+AbsolutePath=0
+FileFormat=0
+ProjectFilesOnly=0
+[Project tree]
+pinablaster
+	+pinablaster
+		+Engine
+			Engine\Engine.js
+			Engine\GameEntity.js
+			Engine\GameEntityManager.js
+			Engine\GameWorld.js
+			Engine\Renderer.js
+			Engine\Sprite.js
+			Engine\SpriteSheet.js
+		+Game
+			Game\Bomb.js
+			Game\DeadEnemy.js
+			Game\Editor.js
+			Game\Enemy.js
+			Game\Explosion.js
+			Game\HotWall.js
+			Game\IceBlock.js
+			Game\PiNaBlaster.js
+			Game\Player.js
+			Game\PowerUp.js
+			Game\Drain.js
+			Game\MagicCarpet.js
+			Game\Key.js
+			Game\Shot.js
+		+Library
+			Library\jQuery.js
+			Library\Maths.js
+			Library\Utils.js
+		-Media
+			Media\bomb_drop.mp3
+			Media\bomb_drop.wav
+			Media\die.mp3
+			Media\die.wav
+			Media\Enemy1.png
+			Media\Enemy2.png
+			Media\Enemy3.png
+			Media\Enemy4.png
+			Media\Enemy5.png
+			Media\Enemy6.png
+			Media\Enemy7.png
+			Media\explosion_1.mp3
+			Media\explosion_1.wav
+			Media\explosion_2.mp3
+			Media\explosion_2.wav
+			Media\explosion_3.mp3
+			Media\explosion_3.wav
+			Media\explosion_4.mp3
+			Media\explosion_4.wav
+			Media\explosion_5.mp3
+			Media\explosion_5.wav
+			Media\pick_up.mp3
+			Media\pick_up.wav
+			Media\poop.mp3
+			Media\poop.wav
+			Media\shoop_da_whoop.mp3
+			Media\shoop_da_whoop.wav
+			Media\SpriteSheet.pdn
+			Media\SpriteSheet.png
+		index.html
+		Main.js
+		style.css
+[Open project files]
+0=index.html
+1=Engine\GameWorld.js
+2=Game\HotWall.js
+3=Game\IceBlock.js
+4=Game\PiNaBlaster.js
+5=Engine\GameEntity.js
+6=Engine\GameEntityManager.js
+7=Game\Player.js
+8=Game\Explosion.js
+9=Game\Bomb.js
+10=Game\Enemy.js
+11=game\Drain.js
+12=Library\Maths.js
+13=Main.js
+14=game\MagicCarpet.js
+15=Engine\Sprite.js
+16=Library\Utils.js
+17=game\Key.js
+18=Game\PowerUp.js
+19=Engine\Engine.js
+20=Engine\SpriteSheet.js
+21=style.css
+22=Engine\Renderer.js
+23=Game\DeadEnemy.js
+24=Game\Editor.js
+25=Game\Shot.js
+[Selected Project Files]
+Main=
+Selected=Game\PiNaBlaster.js
+[index.html]
+TopLine=79
+Caret=3,106
+[Engine\GameWorld.js]
+TopLine=7
+Caret=1,30
+[Game\HotWall.js]
+TopLine=1
+Caret=1,26
+[Game\IceBlock.js]
+TopLine=8
+Caret=5,39
+[Game\PiNaBlaster.js]
+TopLine=364
+Caret=10,396
+[Engine\GameEntity.js]
+TopLine=1
+Caret=17,13
+[Engine\GameEntityManager.js]
+TopLine=1
+Caret=24,26
+[Game\Player.js]
+TopLine=29
+Caret=1,52
+[Game\Explosion.js]
+TopLine=72
+Caret=1,101
+[Game\Bomb.js]
+TopLine=1
+Caret=29,14
+[Game\Enemy.js]
+TopLine=115
+Caret=12,139
+[game\Drain.js]
+TopLine=4
+Caret=14,45
+[Library\Maths.js]
+TopLine=1
+Caret=1,33
+[Main.js]
+TopLine=1
+Caret=58,3
+[game\MagicCarpet.js]
+TopLine=1
+Caret=45,20
+[Engine\Sprite.js]
+TopLine=1
+Caret=21,11
+[Library\Utils.js]
+TopLine=1
+Caret=1,1
+[game\Key.js]
+TopLine=1
+Caret=1,1
+[Game\PowerUp.js]
+TopLine=1
+Caret=23,27
+[Engine\Engine.js]
+TopLine=74
+Caret=31,113
+[Engine\SpriteSheet.js]
+TopLine=1
+Caret=3,29
+[style.css]
+TopLine=1
+Caret=1,1
+[Engine\Renderer.js]
+TopLine=13
+Caret=1,40
+[Game\DeadEnemy.js]
+TopLine=1
+Caret=1,1
+[Game\Editor.js]
+TopLine=1
+Caret=1,1
+[Game\Shot.js]
+TopLine=1
+Caret=1,37

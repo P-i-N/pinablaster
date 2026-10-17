@@ -1,23 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
+
 	<head>
 		<meta charset="utf-8" />
-		<title>PiN'a'Blaster II</title>
+			<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+		<title>PiN'a'Blaster</title>
 		<link rel="stylesheet" href="style.css" type="text/css" />
 	</head>
+	
 	<body oncontextmenu="return false;">
-		<canvas id="mainCanvas" width="100%" height="100%"></canvas>
-		<script src="js/engine/Application.js"></script>
-		<script src="js/engine/Controller.js"></script>
-		<script src="js/engine/Entity.js"></script>
-		<script src="js/engine/Math.js"></script>
-		<script src="js/engine/Overlay.js"></script>
-		<script src="js/engine/Sprite.js"></script>
-		<script src="js/engine/SpriteSheet.js"></script>
-		<script src="js/engine/World.js"></script>
-		<script src="js/game/Game.js"></script>
-		<script src="js/game/MainMenu.js"></script>
-		<script src="js/game/Player.js"></script>
-		<script src="js/Main.js"></script>
+
+		<div id="stage">
+			<canvas id="mainCanvas" width="576" height="324">
+				Your browser does not support HTML 5 canvas.
+			</canvas>
+			<button id="fsButton" type="button" title="Fullscreen (F)" aria-label="Toggle fullscreen">&#x26F6;</button>
+		</div>
+
+		<!-- Libraries -->
+		<script src="Library/Maths.js"></script>
+		<script src="Library/Utils.js"></script>
+		
+		<!-- Engine core -->
+		<script src="Engine/Loop.js"></script>
+		<script src="Engine/Input.js"></script>
+		<script src="Engine/TouchControls.js"></script>
+		<script src="Net/Snapshot.js"></script>
+		<script src="Net/RemoteInput.js"></script>
+		<script src="Net/NetClient.js"></script>
+		<script src="Net/GuestView.js"></script>
+		<script src="Engine/AudioMixer.js"></script>
+		<script src="Engine/Turbo.js"></script>
+			<script src="Engine/Engine.js"></script>
+		<script src="Engine/Renderer.js"></script>
+		<script src="Engine/Display.js"></script>
+		<script src="Engine/Mouse.js"></script>
+		<script src="Engine/GameWorld.js"></script>
+		<script src="Engine/GameEntityManager.js"></script>
+		<script src="Engine/GameEntity.js"></script>
+		<script src="Engine/Sprite.js"></script>
+		<script src="Engine/SpriteSheet.js"></script>
+		<script src="Engine/Tint.js"></script>
+				
+		<!-- Game module -->
+		<script src="Game/Players.js"></script>
+		<script src="Game/AiWorld.js"></script>
+		<script src="Game/AiBrain.js"></script>
+		<script src="Game/Player.js"></script>
+		<script src="Game/Bomb.js"></script>
+		<script src="Game/Explosion.js"></script>
+		<script src="Game/HotWall.js"></script>
+		<script src="Game/PowerUp.js"></script>
+		<script src="Game/Enemy.js"></script>
+		<script src="Game/DeadEnemy.js"></script>
+		<script src="Game/IceBlock.js"></script>
+		<script src="Game/Drain.js"></script>
+		<script src="Game/MagicCarpet.js"></script>
+		<script src="Game/Key.js"></script>
+        <script src="Game/Shot.js"></script>
+		<script src="Game/Hud.js"></script>
+		<script src="Game/Settings.js"></script>
+		<script src="Game/CollisionGrid.js"></script>
+		<script src="Game/Fluid.js"></script>
+		<script src="Game/FluidProxy.js"></script>
+		<script src="Game/Particles.js"></script>
+		<script src="Game/Fx.js"></script>
+		<script src="Game/Screens.js"></script>
+		<script src="Game/Lobby.js"></script>
+		<script src="Game/Lan.js"></script>
+		<script src="Game/Battle.js"></script>
+		<script src="Game/Levels.js"></script>
+		<script src="Game/NetGame.js"></script>
+		<script src="Game/PiNaBlaster.js"></script>
+		<script src="Game/Sim.js"></script>
+		<script src="Game/Editor.js"></script>
+		
+		<!-- Bootloader -->
+		<script src="Main.js"></script>
+		
 	</body>
+	
 </html>

@@ -1,11 +1,172 @@
-html, body {
+html, body
+{
+	margin: 0;
+	height: 100%;
 	background-color: #000000;
 	color: #EEEEEE;
 	font-family: 'Trebuchet MS', Tahoma, Arial;
-	font-size: 13px;
-	margin: 0px;
-	padding: 0px;
-	border: 0;
 	overflow: hidden;
+}
+
+#stage
+{
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+canvas#mainCanvas
+{
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
 	display: block;
+	background: #000000;
+}
+
+#fsButton
+{
+	position: absolute;
+	right: 8px;
+	bottom: 8px;
+	width: 34px;
+	height: 34px;
+	font-size: 20px;
+	line-height: 1;
+	color: #EEEEEE;
+	background: rgba(0, 0, 0, 0.55);
+	border: 1px solid #555555;
+	border-radius: 4px;
+	cursor: pointer;
+	opacity: 0.0;
+	transition: opacity 0.2s;
+}
+
+#stage:hover #fsButton,
+#fsButton:focus-visible
+{
+	opacity: 0.8;
+}
+
+#fatal
+{
+	max-width: 80vw;
+	text-align: center;
+	color: #FF6A6A;
+}
+
+#fatal p
+{
+	color: #C0C0C0;
+}
+
+/* ---- On-screen controls (phones and tablets) ---- */
+
+html, body
+{
+	overscroll-behavior: none;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+#touch
+{
+	display: none;
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100vw;
+	height: 100vh;
+	pointer-events: none;
+	touch-action: none;
+	z-index: 10;
+}
+
+#touch.on
+{
+	display: block;
+}
+
+#touch .tc
+{
+	position: absolute;
+	pointer-events: auto;
+	touch-action: none;
+	color: #FFFFFF;
+	font-weight: bold;
+	text-align: center;
+	background: rgba(255, 255, 255, 0.14);
+	border: 2px solid rgba(255, 255, 255, 0.45);
+	opacity: 0.8;
+}
+
+#touch .tc.down
+{
+	background: rgba(255, 208, 64, 0.5);
+}
+
+#tcDpad
+{
+	left: calc(3vmin + env(safe-area-inset-left, 0px));
+	bottom: calc(3vmin + env(safe-area-inset-bottom, 0px));
+	width: min(36vmin, 230px);
+	height: min(36vmin, 230px);
+	border-radius: 50%;
+}
+
+#tcDpad .arrow
+{
+	position: absolute;
+	font-size: min(7vmin, 44px);
+	line-height: 1;
+	opacity: 0.45;
+}
+
+#tcDpad .a1 { left: 50%; top: 6%; transform: translateX(-50%); }
+#tcDpad .a2 { right: 6%; top: 50%; transform: translateY(-50%); }
+#tcDpad .a3 { left: 50%; bottom: 6%; transform: translateX(-50%); }
+#tcDpad .a4 { left: 6%; top: 50%; transform: translateY(-50%); }
+
+#tcDpad.d1 .a1, #tcDpad.d2 .a2, #tcDpad.d3 .a3, #tcDpad.d4 .a4
+{
+	opacity: 1;
+	color: #FFD040;
+}
+
+#tcBomb
+{
+	right: calc(4vmin + env(safe-area-inset-right, 0px));
+	bottom: calc(6vmin + env(safe-area-inset-bottom, 0px));
+	width: min(26vmin, 170px);
+	height: min(26vmin, 170px);
+	line-height: min(26vmin, 170px);
+	font-size: min(5vmin, 30px);
+	border-radius: 50%;
+}
+
+#tcStart, #tcBack
+{
+	top: calc(2vmin + env(safe-area-inset-top, 0px));
+	height: min(8vmin, 48px);
+	line-height: min(8vmin, 48px);
+	min-width: min(14vmin, 90px);
+	font-size: min(3.4vmin, 20px);
+	border-radius: 8px;
+}
+
+#tcStart { right: calc(2vmin + env(safe-area-inset-right, 0px)); }
+#tcBack { right: calc(18vmin + env(safe-area-inset-right, 0px)); }
+
+/* Keep the fullscreen button out of the way of the thumbs */
+body.touch #fsButton
+{
+	left: 8px;
+	top: 8px;
+	right: auto;
+	bottom: auto;
+	opacity: 0.6;
 }
