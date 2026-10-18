@@ -35,6 +35,7 @@ function GuestViewPrototype()
 		if (snap.w)
 		{
 			GameWorld.Walls = snap.w.slice();
+			GameWorld.Cracks = snap.cr || null;
 			GameWorld.Invalidate();
 		}
 

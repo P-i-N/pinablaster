@@ -49,17 +49,17 @@ function Explosion()
 
 Explosion.prototype = new GameEntity;
 
-function GeneratePowerUp(x, y, owner)
+// The power-up a broken brick leaves, for the player who needs one most (-1: none)
+function RollPowerUpType()
 {
 	var pl = PlayerManager.Neediest();
+	var type = -1;
 
 	if (pl == null)
-		return;
+		return -1;
 
 	if (Math.random() < 0.5)
 	{
-		var type = -1;
-
 		// Chance for common power-up
 		if (Math.random() < 0.5)
 		{
@@ -99,26 +99,45 @@ function GeneratePowerUp(x, y, owner)
 		// Battle is one-hit kills: no hearts, no extra lives
 		if (type >= 0 && Engine.Application && Engine.Application.Mode == "battle" && !BattlePowerUpAllowed(type))
 			type = -1;
-
-		if (type >= 0)
-		{
-			var pu = new PowerUp();
-
-			pu.X = x;
-			pu.Y = y;
-
-			pu.SetPowerUpType(type);
-
-			// Campaign: what a human's bomb uncovers stays out of the CPU players' reach for a while
-			var app = Engine.Application, who = ExplosionOwnerIndex({ Type: "Explosion", Owner: owner });
-
-			if (who >= 0 && app && app.Mode == "campaign" && !(app.Roster[who] && app.Roster[who].Bot))
-				pu.BotLock = POWERUP_BOT_LOCK;
-		}
 	}
+
+	return type;
 }
 
-function CreateExplosionLine(owner, ex, ey, dir, len, stopOnWalls)
+// The brick at (x, y) px broke: out comes its power-up (the one seen through a chip, if it had one)
+function GeneratePowerUp(x, y, owner)
+{
+	var type = TakeCrack(GameWorld.Cracks, Math.floor(y / GameWorld.BlockHeight) * GameWorld.Walls[0].length + Math.floor(x / GameWorld.BlockWidth));
+
+	if (type === undefined)
+		type = RollPowerUpType();
+
+	if (type < 0)
+		return;
+
+	var pu = new PowerUp();
+
+	pu.X = x;
+	pu.Y = y;
+
+	pu.SetPowerUpType(type);
+
+	// Campaign: what a human's bomb uncovers stays out of the CPU players' reach for a while
+	var app = Engine.Application, who = ExplosionOwnerIndex({ Type: "Explosion", Owner: owner });
+
+	if (who >= 0 && app && app.Mode == "campaign" && !(app.Roster[who] && app.Roster[who].Bot))
+		pu.BotLock = POWERUP_BOT_LOCK;
+}
+
+// The bricks next to a blast's flames ([[tx, ty], ...]) crack a little more (see Cracks.js)
+function CrackBricksAround(flames)
+{
+	if (GameWorld.Cracks && flames.length && CrackBlast(GameWorld.Cracks, GameWorld.Walls, flames, Math.random, RollPowerUpType))
+		GameWorld.Invalidate();
+}
+
+// flames (optional): gets the tiles ([tx, ty]) that burn
+function CreateExplosionLine(owner, ex, ey, dir, len, stopOnWalls, flames)
 {
     var tailBegin = [];
     var tailEnd = [];
@@ -200,6 +219,9 @@ function CreateExplosionLine(owner, ex, ey, dir, len, stopOnWalls)
 		exp.Y = y;
 		exp.Owner = owner;
 
+		if (flames)
+			flames.push([Math.floor(x / GameWorld.BlockWidth), Math.floor(y / GameWorld.BlockHeight)]);
+
 		// the flames burn in the colour of the player whose bomb it was
 		var pi = ExplosionOwnerIndex({ Type: "Explosion", Owner: owner });
 
@@ -220,10 +242,14 @@ function CreateExplosionLine(owner, ex, ey, dir, len, stopOnWalls)
 
 function CreateExplosionCross(owner, ex, ey, len, stopOnWalls)
 {
+	var flames = [];
+
 	++len;
 
-	CreateExplosionLine(owner, ex, ey, 1, len, stopOnWalls);
-	CreateExplosionLine(owner, ex, ey, 2, len, stopOnWalls);
-	CreateExplosionLine(owner, ex, ey, 3, len, stopOnWalls);
-	CreateExplosionLine(owner, ex, ey, 4, len, stopOnWalls);
+	CreateExplosionLine(owner, ex, ey, 1, len, stopOnWalls, flames);
+	CreateExplosionLine(owner, ex, ey, 2, len, stopOnWalls, flames);
+	CreateExplosionLine(owner, ex, ey, 3, len, stopOnWalls, flames);
+	CreateExplosionLine(owner, ex, ey, 4, len, stopOnWalls, flames);
+
+	CrackBricksAround(flames);
 }

@@ -144,7 +144,7 @@ function InstallNetGame(game)
 		var snap = BuildSnapshot(
 		{
 			seq: ++seq, timeMs: now, level: game.LevelNumber, mode: game.Mode,
-			walls: GameWorld.Walls, wallsVersion: GameWorld.Version, lastSentVersion: lastWallsVersion,
+			walls: GameWorld.Walls, cracks: GameWorld.Cracks, wallsVersion: GameWorld.Version, lastSentVersion: lastWallsVersion,
 			entities: GameEntityManager.Entities, players: PlayerManager.Players, names: game.PlayerNames,
 			hud: { title: hud.title, kf: PlayerManager.KeyFlags, extra: hud.extra, nt: now < game.NoticeUntil ? game.NoticeText : "" },
 			sounds: Net.SoundQueue.splice(0), overlay: game.OverlayInfo()

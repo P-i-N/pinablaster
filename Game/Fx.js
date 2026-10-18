@@ -9,11 +9,14 @@ var FX_CELLS_PER_TILE = 4;
 var FX_SKULL_FRAME = 165;    // sprite frame of the skull power-up (160 + power-up type 5)
 var FX_STEP = 0.02;          // fluid / particle step (s)
 var FX_BRICK_WAIT = 0.6;     // a broken brick waits this long for its explosion to show up (LAN guests see walls first)
+var FX_STEAM_RATE = 2.5;     // steam puffs a drain lets out per second
+var FX_STEAM_MAX = 240;
 
 // env: { Walls(): string[], BlockWidth, BlockHeight, Entities(): entity[], BrickColors(): string[],
 //        CreateFluid(w, h) (optional: a FluidSolver, or a FluidProxy to run it in a worker),
 //        OwnerIndex(explosion) -> index of the player whose flames these are, -1 for nobody (optional),
-//        Scorch(x, y, alpha, radius) (optional: darken the ground there), ClearScorch() (optional) }
+//        Scorch(x, y, alpha, radius) (optional: darken the ground there), ClearScorch() (optional),
+//        Cracks() (optional: the bricks' cracks, see Cracks.js - a fresh chip knocks out a few bits) }
 function FxController(env)
 {
 	var BW = env.BlockWidth, BH = env.BlockHeight;
@@ -25,6 +28,7 @@ function FxController(env)
 	this.Grid = new CollisionGrid(tilesX, tilesY, BW, BH);
 	this.Fluid = env.CreateFluid ? env.CreateFluid(tilesX * FX_CELLS_PER_TILE, tilesY * FX_CELLS_PER_TILE) : new FluidSolver(tilesX * FX_CELLS_PER_TILE, tilesY * FX_CELLS_PER_TILE);
 	this.Particles = new ParticleSystem(1400);
+	this.Steam = [];        // puffs rising from the drains: { x, y, vx, vy, big, z, rise, size, grow, age, life, alpha }
 	this.Clock = 0;
 	this.Dirty = false;     // the fluid changed since it was last drawn
 
@@ -37,6 +41,8 @@ function FxController(env)
 	var seenBlasts = {};    // ids of explosions that already pushed the air
 	var tracked = {};       // id -> { type, x, y, t, vx, vy, ct }
 	var pending = [];       // broken bricks waiting for an explosion
+	var chipped = {};       // tile index -> true: chips already seen
+	var chipSeed = null;    // ... in the crack pattern with this seed (a new one is a new level)
 	var fresh = true;       // first look at a (new) level: remember, don't react
 	var active = false;
 
@@ -64,6 +70,7 @@ function FxController(env)
 	{
 		fluid.Clear();
 		this.Particles.Clear();
+		this.Steam.length = 0;
 		blastTiles = {};
 		seenBlasts = {};
 		tracked = {};
@@ -143,6 +150,64 @@ function FxController(env)
 
 		for (var i = 0; i < broken.length; ++i)
 			pending.push({ tx: broken[i][0], ty: broken[i][1], t: self.Clock });
+	}
+
+	// A brick that just lost a piece spits a few bits out of the side the blast came from
+	function syncChips()
+	{
+		var cr = env.Cracks ? env.Cracks() : null;
+
+		if (!cr)
+			return;
+
+		var quiet = cr.seed !== chipSeed;
+
+		if (quiet)
+		{
+			chipSeed = cr.seed;
+			chipped = {};
+		}
+
+		for (var k in cr.tiles)
+		{
+			var c = cr.tiles[k];
+
+			if (!c.chip || chipped[k])
+				continue;
+
+			chipped[k] = true;
+
+			if (!quiet)
+				spawnChipBits(k % tilesX, Math.floor(k / tilesX), c);
+		}
+	}
+
+	function spawnChipBits(tx, ty, c)
+	{
+		var colors = env.BrickColors(), w = [0, 0];
+		var len = Math.sqrt(c.ix * c.ix + c.iy * c.iy);
+		var nx = len ? -c.ix / len : 0, ny = len ? -c.iy / len : -1;
+
+		// just outside the side that was hit
+		var x0 = (tx + 0.5 + nx * 0.6) * BW, y0 = (ty + 0.5 + ny * 0.6) * BH;
+
+		for (var i = 0; i < 12; ++i)
+		{
+			var x = x0 + range(-0.25, 0.25) * BW * Math.abs(ny), y = y0 + range(-0.25, 0.25) * BH * Math.abs(nx);
+			var a = Math.atan2(ny, nx) + range(-0.9, 0.9), sp = range(20, 70);
+
+			if (self.SolidAtPx(x, y))
+				continue;
+
+			windAt(x, y, w);
+
+			addParticle(
+			{
+				x: x, y: y, vx: w[0] * 0.5 + Math.cos(a) * sp, vy: w[1] * 0.5 + Math.sin(a) * sp,
+				z: range(4, 10), vz: range(30, 90), life: range(3, 5), size: range(0.8, 1.6),
+				color: color(colors, "#a0522d"), kind: "brick", light: range(0.6, 1.4)
+			});
+		}
 	}
 
 	function blastNear(tx, ty)
@@ -273,6 +338,78 @@ function FxController(env)
 		}
 	}
 
+	// A puff of steam on the floor at (x, y) px, pushed by (vx, vy); it rises, swells, drifts on the wind and fades.
+	function addSteam(x, y, vx, vy, big)
+	{
+		if (self.Steam.length >= FX_STEAM_MAX)
+			self.Steam.shift();
+
+		self.Steam.push(
+		{
+			x: x, y: y, vx: vx, vy: vy, big: !!big, z: range(0, 2), rise: range(6, 13) * (big ? 1.6 : 1),
+			size: range(3, 5) * (big ? 1.4 : 1), grow: range(4, 8) * (big ? 1.5 : 1), age: 0,
+			life: big ? range(1.4, 2.4) : range(1.6, 2.8), alpha: big ? range(0.7, 0.9) : range(0.4, 0.55)
+		});
+	}
+
+	// A lazy wisp now and then from every drain
+	function drainSteam(d)
+	{
+		if (rnd() >= FX_STEAM_RATE * FX_STEP)
+			return;
+
+		addSteam(d.X + BW / 2 + range(-BW * 0.3, BW * 0.3), d.Y + BH / 2 + range(-BH * 0.2, BH * 0.25), range(-4, 4), range(-3, 3), false);
+	}
+
+	// A blast coming out of a drain blows a cloud of steam out with it
+	function drainBurst(x, y)
+	{
+		for (var i = 0; i < 14; ++i)
+		{
+			var a = rnd() * Math.PI * 2, sp = range(10, 45);
+
+			addSteam(x + BW / 2 + Math.cos(a) * 3, y + BH / 2 + Math.sin(a) * 3, Math.cos(a) * sp, Math.sin(a) * sp, true);
+		}
+	}
+
+	function stepSteam(dt)
+	{
+		var list = self.Steam, w = [0, 0];
+
+		for (var i = list.length - 1; i >= 0; --i)
+		{
+			var p = list[i];
+
+			p.age += dt;
+
+			if (p.age >= p.life) { list.splice(i, 1); continue; }
+
+			windAt(p.x, p.y, w);
+
+			var follow = Math.min(1, 3 * dt);
+
+			p.vx += (w[0] - p.vx) * follow;
+			p.vy += (w[1] - p.vy) * follow;
+
+			// rising slows down as the puff cools
+			p.z += p.rise * dt;
+			p.rise *= 1 - 0.4 * dt;
+			p.size += p.grow * dt;
+
+			// sliding along walls rather than through them
+			var nx = p.x + p.vx * dt;
+
+			if (self.SolidAtPx(nx, p.y)) { p.vx = 0; nx = p.x; }
+
+			var ny = p.y + p.vy * dt;
+
+			if (self.SolidAtPx(nx, ny)) { p.vy = 0; ny = p.y; }
+
+			p.x = nx;
+			p.y = ny;
+		}
+	}
+
 	function enemyBornAt(born, v)
 	{
 		for (var i = 0; i < born.length; ++i)
@@ -291,12 +428,16 @@ function FxController(env)
 	{
 		var list = env.Entities(), seen = {}, now = self.Clock;
 		var vanished = [];
-		var flames = [], born = [];
+		var flames = [], born = [], drains = {};
 
 		// where the flames are: a blast with more flames (a bigger power) burns brighter
 		for (var i = 0; i < list.length; ++i)
+		{
 			if (list[i].Type == "Explosion")
 				flames.push([Math.floor((list[i].X + BW / 2) / BW), Math.floor((list[i].Y + BH / 2) / BH)]);
+			else if (list[i].Type == "Drain")
+				drains[Math.floor((list[i].X + BW / 2) / BW) + "," + Math.floor((list[i].Y + BH / 2) / BH)] = true;
+		}
 
 		for (var i = 0; i < list.length; ++i)
 		{
@@ -366,6 +507,9 @@ function FxController(env)
 
 					var owner = env.OwnerIndex ? env.OwnerIndex(e) : -1;
 
+					if (drains[ex + "," + ey])
+						drainBurst(e.X, e.Y);
+
 					fluid.Burst(cx, cy, FX_CELLS_PER_TILE * 1.375, 2.5 * FX_CELLS_PER_TILE / 4, 0.5 + 0.13 * Math.min(n, 25), 0.6 * (0.4 + 0.15 * Math.min(n, 25)), 18, owner >= 0 ? PLAYER_FLAME_COLORS[owner % PLAYER_FLAME_COLORS.length] : null);
 					active = true;
 				}
@@ -383,6 +527,10 @@ function FxController(env)
 					fluid.Splat(cx, cy, FX_CELLS_PER_TILE * 0.65, t.vx * k, t.vy * k, dust, 0);
 					active = true;
 				}
+			}
+			else if (e.Type == "Drain")
+			{
+				drainSteam(e);
 			}
 			else if (e.Type == "PowerUp" && rnd() < 0.15)
 			{
@@ -463,6 +611,7 @@ function FxController(env)
 	function step()
 	{
 		syncWalls();
+		syncChips();
 		updateSolids();
 		observeEntities();
 		resolveBricks();
@@ -483,6 +632,9 @@ function FxController(env)
 
 		if (self.Particles.List.length)
 			self.Particles.Step(FX_STEP, windAt, function(x, y) { return self.SolidAtPx(x, y); });
+
+		if (self.Steam.length)
+			stepSteam(FX_STEP);
 	}
 
 	// Called every game tick with the tick length (s); runs fixed fluid steps.
@@ -521,6 +673,43 @@ function FxPrototype()
 	var useWorker = true;
 	var scorchCanvas = null, scorchCtx = null;
 	var drawnClock = -1;
+	var puff = null;
+
+	// A soft white blob, scaled to every steam puff
+	function puffImage()
+	{
+		if (!puff)
+		{
+			puff = document.createElement("canvas");
+			puff.width = puff.height = 32;
+
+			var c = puff.getContext("2d"), g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+
+			g.addColorStop(0, "rgba(235,240,245,1)");
+			g.addColorStop(0.45, "rgba(225,232,240,0.55)");
+			g.addColorStop(1, "rgba(220,228,236,0)");
+			c.fillStyle = g;
+			c.fillRect(0, 0, 32, 32);
+		}
+
+		return puff;
+	}
+
+	function drawSteam(ctx, list)
+	{
+		var img = puffImage();
+
+		for (var i = 0; i < list.length; ++i)
+		{
+			var p = list[i], t = p.age / p.life;
+
+			// fades in quickly, thins out slowly
+			ctx.globalAlpha = p.alpha * Math.min(1, t * 6) * (1 - t) * (1 - t);
+			ctx.drawImage(img, p.x - p.size, p.y - p.z - p.size, p.size * 2, p.size * 2);
+		}
+
+		ctx.globalAlpha = 1;
+	}
 
 	function enabled()
 	{
@@ -607,6 +796,7 @@ function FxPrototype()
 				scorchCtx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 			},
 			ClearScorch: function() { scorchCtx.clearRect(0, 0, scorchCanvas.width, scorchCanvas.height); },
+			Cracks: function() { return GameWorld.Cracks; },
 			BrickColors: function()
 			{
 				if (!brickColors)
@@ -725,6 +915,9 @@ function FxPrototype()
 
 			ctx.imageSmoothingEnabled = true;
 			ctx.drawImage(smokeCanvas, 0, 0, W, H);
+
+			if (c.Steam.length)
+				drawSteam(ctx, c.Steam);
 
 			ctx.globalCompositeOperation = "lighter";
 			ctx.globalAlpha = 0.85;

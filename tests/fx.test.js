@@ -298,3 +298,19 @@ test('a blast with more flames makes more smoke', () => {
   };
   assert.ok(smoke(9) > smoke(3) * 1.2, 'more flames, more smoke per flame tile and more overall');
 });
+
+test('drains let out steam that rises, stays out of walls and fades; a blast on a drain blows out a cloud', () => {
+  const g = game(EMPTY);
+  g.ents.push({ ID: 3, Type: 'Drain', X: 17, Y: 17 });
+  const c = new FxController(g.env);
+  run(c, 4);
+  assert.ok(c.Steam.length > 0 && c.Steam.length < 20, 'wisps: ' + c.Steam.length);
+  assert.ok(c.Steam.every(p => p.z > 0 && !c.SolidAtPx(p.x, p.y) && p.age < p.life));
+  assert.ok(!c.Steam.some(p => p.big));
+  g.ents.push(explosion(9, 1, 1));
+  run(c, 0.05);
+  assert.strictEqual(c.Steam.filter(p => p.big).length, 14);
+  g.ents = [];
+  run(c, 4);
+  assert.strictEqual(c.Steam.length, 0);
+});

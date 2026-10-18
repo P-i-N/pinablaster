@@ -616,6 +616,7 @@ function Enemy()
 		
 		var ax = GameWorld.GetAlignedX(this.X + this.Width / 2);
 		var ay = GameWorld.GetAlignedY(this.Y + this.Height / 2);
+		var flames = [];
 		
 		for (var i = 0; i < GameWorld.WorldWidth; ++i)
 		{
@@ -656,6 +657,7 @@ function Enemy()
 			exp.Y = y;
 			exp.Owner = this;
 			exp.IsTail = tail;
+			flames.push([Math.floor(x / GameWorld.BlockWidth), Math.floor(y / GameWorld.BlockHeight)]);
 
 			if (dx != 0)
 				exp.TailOrientation = 1;
@@ -666,6 +668,8 @@ function Enemy()
 			if (tail)
 				break;
 		}
+
+		CrackBricksAround(flames);
 	}
 }
 

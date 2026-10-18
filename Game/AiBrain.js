@@ -26,6 +26,8 @@ var AI_BATTLE_WARY = 1;             // keeps only this much of its caution about
 var AI_POP_MIN_TIME = AI_BOMB_SECONDS + 0.6;   // a blinking skull with less time left than this cannot be blown up in time
 var AI_SUDDEN_HORIZON = 8.0;        // seconds ahead the bots look at the arena closing in
 var AI_BATTLE_PRESSURE = 3;         // an opponent this close (tiles, in a straight count) gets a bomb at once if the way out is safe
+var AI_BATTLE_SHOWN_BONUS = 2;      // a power-up showing through a chipped brick is worth less of a detour (AI_SHOWN_BONUS) ...
+var AI_BATTLE_SHOWN_PUSH = 4;       // ... and so is the push power-up (AI_SHOWN_PUSH)
 
 function AiAggressive(level)
 {
@@ -40,6 +42,8 @@ function AiAggressive(level)
 	l.WallSlope = AI_BATTLE_WALL_SLOPE;
 	l.Wary = Math.min(level.Wary, AI_BATTLE_WARY);
 	l.Pressure = level.Traps ? AI_BATTLE_PRESSURE : 0;   // (Easy does not)
+	l.ShownBonus = AI_BATTLE_SHOWN_BONUS;
+	l.ShownPush = AI_BATTLE_SHOWN_PUSH;
 	l.Aggressive = true;
 
 	return l;
@@ -741,6 +745,8 @@ var AI_BOMB_GOALS = { hunt: true, wall: true, remote: true, skullpop: true, stal
 var AI_SAFE_ROOM = 1;         // Normal / Hard: a bomb is only safe with this many tiles to hide on afterwards
 var AI_DIG_SCORE = true;      // digging spots by how many bricks a bomb there clears (off: any tile next to a brick)
 var AI_DIG_EXTRA = 1.5;       // every brick past the first makes a digging spot worth this many steps
+var AI_SHOWN_BONUS = 5;       // a brick with a power-up showing through a chip (see Cracks.js) makes a digging spot worth this many steps
+var AI_SHOWN_PUSH = 8;        // ... the push power-up, to a bot that kicks bombs
 var AI_STICKY = 1.5;         // the goal of the last plan counts as this many steps closer (hysteresis against jitter)
 var AI_KICK_DODGE = "hits";    // kick a threatening bomb away instead of running: "any" kick that makes our tile safe, "hits" only
                               // one that hits somebody too, "" never
@@ -1002,6 +1008,23 @@ function AiChooseGoal(view, me, level, danger, opts, targets, hereOk, shun, popp
 			return level.WallBonus + level.WallSlope * gapTo(x, y);
 		};
 
+		// Bricks with a power-up showing through a chip: tile index -> { bonus, range } (the same rules as a power-up lying about)
+		var shown = {};
+
+		(view.shown || []).forEach(function(b)
+		{
+			if (level.PowerRange > 0 && !(level.AvoidBadLuck && b.type == 5) && !(AI_COOP_ITEMS && campaign && AiHumanNearer(view, me, b.x, b.y)))
+				shown[AiIndex(view, b.x, b.y)] = b.type == 3 && level.Kicks ? { bonus: level.ShownPush || AI_SHOWN_PUSH, range: Math.max(level.PowerRange, 12) } : { bonus: level.ShownBonus || AI_SHOWN_BONUS, range: level.PowerRange };
+		});
+
+		// what bombing brick (x, y) from tile i is worth (lower is better)
+		var brickBonus = function(x, y, i)
+		{
+			var loot = shown[AiIndex(view, x, y)];
+
+			return wallBonus(x, y) - (loot && reach.steps[i] <= loot.range ? loot.bonus : 0);
+		};
+
 		if (AI_DIG_SCORE)
 		{
 			// Digging spots by what one bomb there clears: every soft wall (and ice block) its blast reaches counts, so a bot
@@ -1023,7 +1046,7 @@ function AiChooseGoal(view, me, level, danger, opts, targets, hereOk, shun, popp
 						if (ch == "1" || iceSet[AiIndex(view, cx, cy)])
 						{
 							++bricks;
-							nearest = Math.min(nearest, wallBonus(cx, cy));
+							nearest = Math.min(nearest, ch == "1" ? brickBonus(cx, cy, i) : wallBonus(cx, cy));
 
 							if (!me.superBomb || ch != "1")
 								break;
@@ -1043,7 +1066,7 @@ function AiChooseGoal(view, me, level, danger, opts, targets, hereOk, shun, popp
 				for (var x = 0; x < view.w; ++x)
 					if (AiWall(view, x, y) == "1")
 						for (var d = 1; d <= 4; ++d)
-							add(x + AI_DIRS[d][0], y + AI_DIRS[d][1], "wall", wallBonus(x, y), 999);
+							add(x + AI_DIRS[d][0], y + AI_DIRS[d][1], "wall", brickBonus(x, y, AiIndex(view, x + AI_DIRS[d][0], y + AI_DIRS[d][1])), 999);
 
 			// ice blocks break in a blast too (one that cannot be pushed may be all that seals a bot in)
 			(view.ice || []).forEach(function(c)
@@ -1606,7 +1629,7 @@ function AiBuildView(mode, roster)
 {
 	var bw = GameWorld.BlockWidth, bh = GameWorld.BlockHeight;
 	var v = { w: GameWorld.WorldWidth, h: GameWorld.WorldHeight, walls: GameWorld.Walls, bombs: [], fire: [], blocked: [],
-		ice: [], carpets: [], drains: [], lasers: [], shots: [], enemies: [], powerups: [], skulls: [], keys: [], players: [],
+		ice: [], carpets: [], drains: [], lasers: [], shots: [], enemies: [], powerups: [], shown: [], skulls: [], keys: [], players: [],
 		closing: [], keyFlags: PlayerManager.KeyFlags, mode: mode };
 
 	// Battle: the cells of the arena about to close (sudden death), and when
@@ -1698,6 +1721,20 @@ function AiBuildView(mode, roster)
 				break;
 		}
 	});
+
+	// bricks with a power-up showing through a chip
+	var cracks = GameWorld.Cracks;
+
+	if (cracks)
+	{
+		for (var k in cracks.tiles)
+		{
+			var c = cracks.tiles[k], bx = k % v.w, by = Math.floor(k / v.w);
+
+			if (c.chip && c.pu >= 0 && v.walls[by] && v.walls[by][bx] == "1")
+				v.shown.push({ x: bx, y: by, type: c.pu });
+		}
+	}
 
 	PlayerManager.Players.forEach(function(p)
 	{

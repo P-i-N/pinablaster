@@ -87,6 +87,8 @@ function PiNaBlaster()
 				this.ShowNotice(lv.Name + " - " + lv.Hint, 5000);
 		}
 
+		GameWorld.Cracks = NewCracks(CrackSeed());
+
         this.LevelNumber = level;
         this.GameOverTimer = 0.0;
         this.WinTimer = 0.0;
@@ -493,6 +495,9 @@ function PiNaBlaster()
 			this.SwitchingLevel = true;
 			this.SetLevel(tr.next);
 			this.SwitchingLevel = false;
+
+			// (the modules stand still during the wipe, so rebuild the wall image now or the old level's walls show as it opens)
+			GameWorld.Tick(0.0);
 
 			var c = this.TransitionCentre();
 

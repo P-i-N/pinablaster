@@ -32,6 +32,9 @@ function GameWorldPrototype()
 	// Bumped whenever the walls change (LAN snapshots only resend walls when this changes)
 	this.Version = 0;
 
+	// Cracked bricks (see Game/Cracks.js); a new level starts a new pattern
+	this.Cracks = null;
+
 	var isValid = false;
 	
 	this.Init = function()
@@ -74,6 +77,11 @@ function GameWorldPrototype()
 				if (ch >= 0)
                 {
     				Renderer.SpriteSheet.DrawSpriteByIndex(wctx, bx, by, this.WallSpriteOffset + ch);
+
+					var crack = ch == 1 && this.Cracks ? this.Cracks.tiles[y * this.WorldWidth + x] : null;
+
+					if (crack)
+						DrawBrickCracks(wctx, Renderer.SpriteSheet, this.GroundStyle, this.Cracks.seed, x, y, bx, by, this.BlockWidth, this.BlockHeight, crack);
                 }
                 else
                 {
@@ -193,6 +201,7 @@ function GameWorldPrototype()
 		if (y < 0 || y >= this.WorldHeight) return;
 		
 		this.Walls[y] = this.Walls[y].setCharAt(x, block);
+		this.ForgetCracks(x, y, block);
 		this.Invalidate();
 	}
 	
@@ -213,9 +222,17 @@ function GameWorldPrototype()
 		if (y < 0 || y >= this.WorldHeight) return;
 		
 		this.Walls[y] = this.Walls[y].setCharAt(x, block);
+		this.ForgetCracks(x, y, block);
 		this.Invalidate();
 	}
 	
+	// Tile (x, y) turned into `block`: the cracks of what was there go (a breaking brick, '.', keeps them for GeneratePowerUp)
+	this.ForgetCracks = function(x, y, block)
+	{
+		if (this.Cracks && block != '.')
+			delete this.Cracks.tiles[y * this.WorldWidth + x];
+	}
+
 	this.GetDangerLevel = function(x, y)
 	{
 		x = Math.floor(x / this.BlockWidth);			

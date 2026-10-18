@@ -151,7 +151,7 @@ function PlayerIndexOfSlot(slots, slot)
 	return OccupiedSlots(slots).indexOf(slot);
 }
 
-// The host's 30 Hz message. `walls` ride along only when the level geometry changed.
+// The host's 30 Hz message. `walls` (and the bricks' cracks) ride along only when the level geometry changed.
 function BuildSnapshot(s)
 {
 	var entities = [];
@@ -176,6 +176,9 @@ function BuildSnapshot(s)
 	{
 		snap.w = s.walls;
 		snap.wv = s.wallsVersion;
+
+		if (s.cracks)
+			snap.cr = s.cracks;
 	}
 
 	return snap;

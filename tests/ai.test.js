@@ -805,3 +805,20 @@ test('AiDecide labels its plan with a word for the HUD: fleeing, digging, search
   const duel = view(HALL, { players: [{ x: 1, y: 1, index: 0 }, { x: 4, y: 1, index: 1 }] });
   assert.strictEqual(word(duel, Object.assign({}, ME, { x: 1, y: 1, power: 3 })), 'ATTACK');
 });
+
+test('AiDecide (campaign): Normal and Hard dig out a power-up that shows through a chipped brick before a nearer plain brick; Easy does not', () => {
+  // bricks at (1,1) (two steps away) and (7,1) (four steps away)
+  const rows = ['000000000', '01     10', '0       0', '000000000'];
+  const me = Object.assign({}, ME, { x: 3, y: 2, power: 1 });
+  const v = shown => view(rows, { players: [{ x: 3, y: 2, index: 0, bot: true }], shown, mode: 'campaign' });
+  const side = (shown, level) => {
+    const plan = A.AiDecide(v(shown), me, A.AI_LEVELS[level], never);
+    assert.strictEqual(plan.reason, 'wall');
+    return plan.path[plan.path.length - 1].x > 4 ? 'right' : 'left';
+  };
+  assert.strictEqual(side([], 'normal'), 'left');
+  assert.strictEqual(side([{ x: 7, y: 1, type: 1 }], 'normal'), 'right');
+  assert.strictEqual(side([{ x: 7, y: 1, type: 1 }], 'hard'), 'right');
+  assert.strictEqual(side([{ x: 7, y: 1, type: 1 }], 'easy'), 'left');
+  assert.strictEqual(side([{ x: 7, y: 1, type: 5 }], 'normal'), 'left', 'not for a skull');
+});
